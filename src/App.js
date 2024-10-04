@@ -10,6 +10,8 @@ const App = () => {
   const [guesses, setGuesses] = useState([]);
   const [currentGuess, setCurrentGuess] = useState('');
   const [keyColors, setKeyColors] = useState({});
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -51,7 +53,7 @@ const App = () => {
   };
 
   const handleKeyPress = (char) => {
-    if (currentGuess.length < targetWord.length) {
+    if (currentGuess.length < targetWord.length && !isModalVisible) {
       setCurrentGuess(currentGuess + char);
     }
   };
@@ -65,6 +67,14 @@ const App = () => {
       setGuesses([...guesses, currentGuess]);
       setCurrentGuess('');
       updateKeyColors(currentGuess);
+
+      if (currentGuess === targetWord) {
+        setModalMessage('Congratulations! You guessed the correct chatter!');
+        setIsModalVisible(true);
+      } else if (guesses.length >= 6) {
+        setModalMessage(`Game Over! The chatter was: ${targetWord}`);
+        setIsModalVisible(true);
+      }
     }
   };
 
@@ -90,7 +100,6 @@ const App = () => {
 
     setKeyColors(newKeyColors);
   };
-  
 
   const getFeedback = (guess) => {
     const feedback = Array(guess.length).fill('grey');
@@ -116,6 +125,15 @@ const App = () => {
     return feedback;
   };
 
+  const resetGame = () => {
+    const randomUser = chatters[Math.floor(Math.random() * chatters.length)];
+    setTargetWord(randomUser);
+    setGuesses([]);
+    setCurrentGuess('');
+    setKeyColors({});
+    setIsModalVisible(false);
+  };
+
   const KeyboardScreen = () => {
     const firstRow = 'qwertyuiop';
     const secondRow = 'asdfghjkl';
@@ -124,77 +142,80 @@ const App = () => {
 
     return (
       <div className="KeyboardScreen font-mono">
-        <div className="guesses">
-          {guesses.map((guess, index) => (
-            <div key={index} className="guess flex justify-center mb-2">
-              {guess.split('').map((char, charIndex) => {
-                const feedback = getFeedback(guess)[charIndex];
-                const bgColor = feedback === 'green' ? 'bg-green-500' : feedback === 'yellow' ? 'bg-yellow-500' : 'bg-stone-500';
-                return (
-                  <span key={charIndex} className={`key-button ${bgColor} text-white m-1 p-2 rounded`}>
-                    {char}
-                  </span>
-                );
-              })}
-            </div>
-          ))}
-          <div className="guess flex justify-center mb-2">
-            {Array.from({ length: targetWord.length }).map((_, charIndex) => (
-              <span key={charIndex} className="key-button bg-stone-200 text-black m-1 p-2 rounded">
-                {currentGuess[charIndex] || '\u00A0'}
-              </span>
-            ))}
-          </div>
-          {Array.from({ length: 6 - guesses.length }).map((_, index) => (
-            <div key={index} className="guess flex justify-center mb-2">
-              {Array.from({ length: targetWord.length }).map((_, charIndex) => (
-                <span key={charIndex} className="key-button bg-stone-200 text-white m-1 p-2 rounded">
-                  &nbsp;
-                </span>
-              ))}
-            </div>
+      <div className="guesses">
+        {guesses.map((guess, index) => (
+        <div key={index} className="guess flex justify-center mb-2">
+          {guess.split('').map((char, charIndex) => {
+          const feedback = getFeedback(guess)[charIndex];
+          const bgColor = feedback === 'green' ? 'bg-green-500' : feedback === 'yellow' ? 'bg-yellow-500' : 'bg-stone-500';
+          return (
+            <span key={charIndex} className={`key-button ${bgColor} text-white m-1 p-2 rounded`}>
+            {char}
+            </span>
+          );
+          })}
+        </div>
+        ))}
+        <div className="guess flex justify-center mb-2">
+        {Array.from({ length: targetWord.length }).map((_, charIndex) => (
+          <span key={charIndex} className="key-button bg-stone-200 text-black m-1 p-2 rounded">
+          {currentGuess[charIndex] || '\u00A0'}
+          </span>
+        ))}
+        </div>
+        {Array.from({ length: 6 - guesses.length }).map((_, index) => (
+        <div key={index} className="guess flex justify-center mb-2">
+          {Array.from({ length: targetWord.length }).map((_, charIndex) => (
+          <span key={charIndex} className="key-button bg-stone-200 text-white m-1 p-2 rounded">
+            &nbsp;
+          </span>
           ))}
         </div>
-        <hr className="my-4" />
-        <div className="keyboard">
-          <div className="keyboard-row flex justify-center mb-2">
-            {numbers.split('').map((char, index) => (
-              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
-                {char}
-              </button>
-            ))}
-          </div>
-          <div className="keyboard-row flex justify-center mb-2">
-            {firstRow.split('').map((char, index) => (
-              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
-                {char}
-              </button>
-            ))}
-          </div>
-          <div className="keyboard-row flex justify-center mb-2">
-            {secondRow.split('').map((char, index) => (
-              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
-                {char}
-              </button>
-            ))}
-          </div>
-          <div className="keyboard-row flex justify-center mb-2">
-            {thirdRow.split('').map((char, index) => (
-              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
-                {char}
-              </button>
-            ))}
-          </div>
-          <div className="keyboard-row flex justify-center mb-2">
-            <button className="key-button font-mono bg-stone-500 text-white m-1 p-2 rounded" onClick={handleDelete}>Delete</button>
-            <button className="key-button font-mono bg-stone-500 text-white m-1 p-2 rounded" onClick={handleSubmitGuess}>Submit</button>
-          </div>
+        ))}
+      </div>
+      <hr className="my-4" />
+      <div className="keyboard">
+        <div className="keyboard-row flex justify-center mb-2">
+        {numbers.split('').map((char, index) => (
+          <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
+          {char}
+          </button>
+        ))}
         </div>
-        {guesses.length >= 7 && (
-          <div className="game-over text-center text-red-500">
-            Game Over! The chatter was: {targetWord}
-          </div>
-        )}
+        <div className="keyboard-row flex justify-center mb-2">
+        {firstRow.split('').map((char, index) => (
+          <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
+          {char}
+          </button>
+        ))}
+        </div>
+        <div className="keyboard-row flex justify-center mb-2">
+        {secondRow.split('').map((char, index) => (
+          <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
+          {char}
+          </button>
+        ))}
+        </div>
+        <div className="keyboard-row flex justify-center mb-2">
+        {thirdRow.split('').map((char, index) => (
+          <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
+          {char}
+          </button>
+        ))}
+        </div>
+        <div className="keyboard-row flex justify-center mb-2">
+        <button className="key-button font-mono bg-stone-500 text-white m-1 p-2 rounded" onClick={handleDelete}>Delete</button>
+        <button className="key-button font-mono bg-stone-500 text-white m-1 p-2 rounded" onClick={handleSubmitGuess}>Submit</button>
+        </div>
+      </div>
+      {isModalVisible && (
+        <dialog open className="modal fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center">
+        <div className="modal-content bg-white p-4 rounded shadow-lg text-center">
+          <p className="text-xl mb-4">{modalMessage}</p>
+          <button className="bg-stone-500 text-white p-2 rounded" onClick={resetGame}>New Game</button>
+        </div>
+        </dialog>
+      )}
       </div>
     );
   };
