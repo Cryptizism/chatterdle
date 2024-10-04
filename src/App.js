@@ -70,15 +70,24 @@ const App = () => {
 
   const updateKeyColors = (guess) => {
     const newKeyColors = { ...keyColors };
+    const feedback = getFeedback(guess);
+
     guess.split('').forEach((char, index) => {
-      if (char === targetWord[index]) {
-        newKeyColors[char] = 'bg-green-500';
-      } else if (targetWord.includes(char) && newKeyColors[char] !== 'bg-green-500') {
-        newKeyColors[char] = 'bg-yellow-500';
+      const currentColor = newKeyColors[char];
+      const feedbackColor = feedback[index] === 'green' ? 'bg-green-500' : feedback[index] === 'yellow' ? 'bg-yellow-500' : 'bg-stone-500';
+
+      if (currentColor === 'bg-green-500') {
+        // Green cannot be replaced
+        return;
+      } else if (currentColor === 'bg-yellow-500' && feedbackColor === 'bg-stone-500') {
+        // Yellow cannot be replaced by grey
+        return;
       } else {
-        newKeyColors[char] = 'bg-stone-500';
+        // Update the color
+        newKeyColors[char] = feedbackColor;
       }
     });
+
     setKeyColors(newKeyColors);
   };
   
@@ -131,7 +140,7 @@ const App = () => {
           ))}
           <div className="guess flex justify-center mb-2">
             {Array.from({ length: targetWord.length }).map((_, charIndex) => (
-              <span key={charIndex} className="key-button bg-stone-200 text-white m-1 p-2 rounded">
+              <span key={charIndex} className="key-button bg-stone-200 text-black m-1 p-2 rounded">
                 {currentGuess[charIndex] || '\u00A0'}
               </span>
             ))}
@@ -150,28 +159,28 @@ const App = () => {
         <div className="keyboard">
           <div className="keyboard-row flex justify-center mb-2">
             {numbers.split('').map((char, index) => (
-              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-500'} text-white m-1 p-2 rounded`} onClick={() => handleKeyPress(char)}>
+              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
                 {char}
               </button>
             ))}
           </div>
           <div className="keyboard-row flex justify-center mb-2">
             {firstRow.split('').map((char, index) => (
-              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-500'} text-white m-1 p-2 rounded`} onClick={() => handleKeyPress(char)}>
+              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
                 {char}
               </button>
             ))}
           </div>
           <div className="keyboard-row flex justify-center mb-2">
             {secondRow.split('').map((char, index) => (
-              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-500'} text-white m-1 p-2 rounded`} onClick={() => handleKeyPress(char)}>
+              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
                 {char}
               </button>
             ))}
           </div>
           <div className="keyboard-row flex justify-center mb-2">
             {thirdRow.split('').map((char, index) => (
-              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-500'} text-white m-1 p-2 rounded`} onClick={() => handleKeyPress(char)}>
+              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
                 {char}
               </button>
             ))}
@@ -194,17 +203,17 @@ const App = () => {
     <div className="App min-h-screen bg-stone-100 flex flex-col items-center justify-center font-mono">
       {screen === 'home' ? (
         <header className="App-header text-center">
+          <button onClick={handleStartClick} className="bg-stone-500 text-white p-2 rounded">
+            Start
+          </button>
           <p className="text-stone-700 text-xl mb-4">
-            {channel ? `Welcome to ${channel}'s chat` : 'Connecting...'}
+            {channel ? `Hello ${channel}'s chat, type anything to join! (${chatters.length} have joined)` : 'Connecting...'}
           </p>
           <ul className="text-stone-600 mb-4">
             {chatters.map((chatter, index) => (
               <li key={index}>{chatter}</li>
             ))}
           </ul>
-          <button onClick={handleStartClick} className="bg-stone-500 text-white p-2 rounded">
-            Start
-          </button>
         </header>
       ) : (
         <KeyboardScreen />
