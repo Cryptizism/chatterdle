@@ -1,23 +1,214 @@
-import logo from './logo.svg';
 import './App.css';
+import React, { useState, useEffect } from 'react';
+import tmi from 'tmi.js';
 
-function App() {
+const App = () => {
+  const [channel, setChannel] = useState(null);
+  const [chatters, setChatters] = useState([]);
+  const [screen, setScreen] = useState('home');
+  const [targetWord, setTargetWord] = useState('');
+  const [guesses, setGuesses] = useState([]);
+  const [currentGuess, setCurrentGuess] = useState('');
+  const [keyColors, setKeyColors] = useState({});
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const user = urlParams.get('user') || prompt('Please enter your name');
+    if (user) {
+      setChannel(user);
+      connectToChannel(user);
+    }
+  }, []);
+
+  const connectToChannel = (channelName) => {
+    const client = new tmi.Client({
+      channels: [channelName]
+    });
+
+    client.connect().catch(console.error);
+
+    client.on('message', (channel, tags, message, self) => {
+      if (!self) {
+        const username = tags['username'];
+        setChatters((prevChatters) => {
+          if (!prevChatters.includes(username)) {
+            return [...prevChatters, username];
+          }
+          return prevChatters;
+        });
+      }
+    });
+  };
+
+  const handleStartClick = () => {
+    if (chatters.length > 0) {
+      const randomUser = chatters[Math.floor(Math.random() * chatters.length)];
+      setTargetWord(randomUser);
+      setScreen('keyboard');
+    } else {
+      alert('No chatters available to start the game.');
+    }
+  };
+
+  const handleKeyPress = (char) => {
+    if (currentGuess.length < targetWord.length) {
+      setCurrentGuess(currentGuess + char);
+    }
+  };
+
+  const handleDelete = () => {
+    setCurrentGuess(currentGuess.slice(0, -1));
+  };
+
+  const handleSubmitGuess = () => {
+    if (currentGuess.length === targetWord.length) {
+      setGuesses([...guesses, currentGuess]);
+      setCurrentGuess('');
+      updateKeyColors(currentGuess);
+    }
+  };
+
+  const updateKeyColors = (guess) => {
+    const newKeyColors = { ...keyColors };
+    guess.split('').forEach((char, index) => {
+      if (char === targetWord[index]) {
+        newKeyColors[char] = 'bg-green-500';
+      } else if (targetWord.includes(char) && newKeyColors[char] !== 'bg-green-500') {
+        newKeyColors[char] = 'bg-yellow-500';
+      } else {
+        newKeyColors[char] = 'bg-stone-500';
+      }
+    });
+    setKeyColors(newKeyColors);
+  };
+  
+
+  const getFeedback = (guess) => {
+    const feedback = Array(guess.length).fill('grey');
+    const targetWordArray = targetWord.split('');
+    const guessArray = guess.split('');
+
+    // First pass: mark greens
+    guessArray.forEach((char, index) => {
+      if (char === targetWordArray[index]) {
+        feedback[index] = 'green';
+        targetWordArray[index] = null; // Mark this char as used
+      }
+    });
+
+    // Second pass: mark yellows
+    guessArray.forEach((char, index) => {
+      if (feedback[index] !== 'green' && targetWordArray.includes(char)) {
+        feedback[index] = 'yellow';
+        targetWordArray[targetWordArray.indexOf(char)] = null; // Mark this char as used
+      }
+    });
+
+    return feedback;
+  };
+
+  const KeyboardScreen = () => {
+    const firstRow = 'qwertyuiop';
+    const secondRow = 'asdfghjkl';
+    const thirdRow = 'zxcvbnm';
+    const numbers = '0123456789_';
+
+    return (
+      <div className="KeyboardScreen font-mono">
+        <div className="guesses">
+          {guesses.map((guess, index) => (
+            <div key={index} className="guess flex justify-center mb-2">
+              {guess.split('').map((char, charIndex) => {
+                const feedback = getFeedback(guess)[charIndex];
+                const bgColor = feedback === 'green' ? 'bg-green-500' : feedback === 'yellow' ? 'bg-yellow-500' : 'bg-stone-500';
+                return (
+                  <span key={charIndex} className={`key-button ${bgColor} text-white m-1 p-2 rounded`}>
+                    {char}
+                  </span>
+                );
+              })}
+            </div>
+          ))}
+          <div className="guess flex justify-center mb-2">
+            {Array.from({ length: targetWord.length }).map((_, charIndex) => (
+              <span key={charIndex} className="key-button bg-stone-200 text-white m-1 p-2 rounded">
+                {currentGuess[charIndex] || '\u00A0'}
+              </span>
+            ))}
+          </div>
+          {Array.from({ length: 6 - guesses.length }).map((_, index) => (
+            <div key={index} className="guess flex justify-center mb-2">
+              {Array.from({ length: targetWord.length }).map((_, charIndex) => (
+                <span key={charIndex} className="key-button bg-stone-200 text-white m-1 p-2 rounded">
+                  &nbsp;
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+        <hr className="my-4" />
+        <div className="keyboard">
+          <div className="keyboard-row flex justify-center mb-2">
+            {numbers.split('').map((char, index) => (
+              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-500'} text-white m-1 p-2 rounded`} onClick={() => handleKeyPress(char)}>
+                {char}
+              </button>
+            ))}
+          </div>
+          <div className="keyboard-row flex justify-center mb-2">
+            {firstRow.split('').map((char, index) => (
+              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-500'} text-white m-1 p-2 rounded`} onClick={() => handleKeyPress(char)}>
+                {char}
+              </button>
+            ))}
+          </div>
+          <div className="keyboard-row flex justify-center mb-2">
+            {secondRow.split('').map((char, index) => (
+              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-500'} text-white m-1 p-2 rounded`} onClick={() => handleKeyPress(char)}>
+                {char}
+              </button>
+            ))}
+          </div>
+          <div className="keyboard-row flex justify-center mb-2">
+            {thirdRow.split('').map((char, index) => (
+              <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-500'} text-white m-1 p-2 rounded`} onClick={() => handleKeyPress(char)}>
+                {char}
+              </button>
+            ))}
+          </div>
+          <div className="keyboard-row flex justify-center mb-2">
+            <button className="key-button font-mono bg-stone-500 text-white m-1 p-2 rounded" onClick={handleDelete}>Delete</button>
+            <button className="key-button font-mono bg-stone-500 text-white m-1 p-2 rounded" onClick={handleSubmitGuess}>Submit</button>
+          </div>
+        </div>
+        {guesses.length >= 7 && (
+          <div className="game-over text-center text-red-500">
+            Game Over! The chatter was: {targetWord}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="App min-h-screen bg-stone-100 flex flex-col items-center justify-center font-mono">
+      {screen === 'home' ? (
+        <header className="App-header text-center">
+          <p className="text-stone-700 text-xl mb-4">
+            {channel ? `Welcome to ${channel}'s chat` : 'Connecting...'}
+          </p>
+          <ul className="text-stone-600 mb-4">
+            {chatters.map((chatter, index) => (
+              <li key={index}>{chatter}</li>
+            ))}
+          </ul>
+          <button onClick={handleStartClick} className="bg-stone-500 text-white p-2 rounded">
+            Start
+          </button>
+        </header>
+      ) : (
+        <KeyboardScreen />
+      )}
     </div>
   );
 }
