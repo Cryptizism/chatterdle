@@ -4,7 +4,7 @@ import tmi from 'tmi.js';
 
 const App = () => {
   const [channel, setChannel] = useState(null);
-  const [chatters, setChatters] = useState(["superduperlongname"]);
+  const [chatters, setChatters] = useState([]);
   const [screen, setScreen] = useState('home');
   const [targetWord, setTargetWord] = useState('');
   const [guesses, setGuesses] = useState([]);
