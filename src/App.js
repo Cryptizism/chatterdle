@@ -4,7 +4,7 @@ import tmi from 'tmi.js';
 
 const App = () => {
   const [channel, setChannel] = useState(null);
-  const [chatters, setChatters] = useState([]);
+  const [chatters, setChatters] = useState(["superduperlongname"]);
   const [screen, setScreen] = useState('home');
   const [targetWord, setTargetWord] = useState('');
   const [guesses, setGuesses] = useState([]);
@@ -133,6 +133,27 @@ const App = () => {
     setKeyColors({});
     setIsModalVisible(false);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (screen === 'keyboard') {
+        if (event.key === 'Backspace') {
+          handleDelete();
+        } else if (event.key === 'Enter') {
+          handleSubmitGuess();
+        } else if (event.key.length === 1 && event.key.match(/[a-z0-9_]/i)) {
+          handleKeyPress(event.key);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup the event listener on component unmount
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [screen, handleDelete, handleSubmitGuess, handleKeyPress]);
 
   const KeyboardScreen = () => {
     const firstRow = 'qwertyuiop';
