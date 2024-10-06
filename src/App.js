@@ -142,7 +142,7 @@ const App = () => {
         } else if (event.key === 'Enter') {
           handleSubmitGuess();
         } else if (event.key.length === 1 && event.key.match(/[a-z0-9_]/i)) {
-          handleKeyPress(event.key);
+          handleKeyPress(event.key.toLowerCase());
         }
       }
     };
