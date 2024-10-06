@@ -1,6 +1,7 @@
 import './App.css';
 import React, { useState, useEffect, useRef } from 'react';
 import tmi from 'tmi.js';
+import { useCookies } from 'react-cookie';
 
 const App = () => {
   const [channel, setChannel] = useState(null);
@@ -12,6 +13,9 @@ const App = () => {
   const [keyColors, setKeyColors] = useState({});
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
+
+  const [cookies, setCookie] = useCookies(['user']);
+
   const userInputRef = useRef(null);
 
   const connectToChannel = (channelName) => {
@@ -129,6 +133,7 @@ const App = () => {
   const handleUserSubmit = () => {
     const user = userInputRef.current.value;
     if (user) {
+      setCookie('user', user, { path: '/' });
       setChannel(user);
       connectToChannel(user);
     }
@@ -154,6 +159,12 @@ const App = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [screen, handleDelete, handleSubmitGuess, handleKeyPress]);
+
+  useEffect(() => {
+    if (cookies.user && userInputRef.current) {
+      userInputRef.current.value = cookies.user;   
+    }
+  }, [cookies.user]);
 
   const KeyboardScreen = () => {
     const firstRow = 'qwertyuiop';
