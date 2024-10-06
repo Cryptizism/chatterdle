@@ -4,8 +4,13 @@ import tmi from 'tmi.js';
 import { useCookies } from 'react-cookie';
 
 const App = () => {
-  const [channel, setChannel] = useState(null);
-  const [chatters, setChatters] = useState([]);
+  const [channel, setChannel] = useState();
+  const [chatters, setChatters] = useState({});
+  const [chatterFilter, setChatterFilter] = useState({
+    all: true,
+    mods: false,
+    subs: false
+  });
   const [screen, setScreen] = useState('home');
   const [targetWord, setTargetWord] = useState('');
   const [guesses, setGuesses] = useState([]);
@@ -18,6 +23,24 @@ const App = () => {
 
   const userInputRef = useRef(null);
 
+
+  const filterChatters = () => {
+    if (!chatters) {
+      return [];
+    }
+
+    return Object.keys(chatters).filter((chatter) => {
+      if (chatterFilter.all) {
+        return true;
+      } else if (chatterFilter.mods && chatters[chatter].mod) {
+        return true;
+      } else if (chatterFilter.subs && chatters[chatter].subscriber) {
+        return true;
+      }
+      return false;
+    });
+  }
+
   const connectToChannel = (channelName) => {
     const client = new tmi.Client({
       channels: [channelName]
@@ -28,19 +51,23 @@ const App = () => {
     client.on('message', (channel, tags, message, self) => {
       if (!self) {
         const username = tags['username'];
+        const mod = tags['mod'];
+        const subscriber = tags['subscriber'];
         setChatters((prevChatters) => {
-          if (!prevChatters.includes(username)) {
-            return [...prevChatters, username];
+          if (!prevChatters[username]) {
+            return { ...prevChatters, [username]: { mod, subscriber } };
+          } else {
+            return prevChatters;
           }
-          return prevChatters;
         });
       }
     });
   };
 
   const handleStartClick = () => {
-    if (chatters.length > 0) {
-      const randomUser = chatters[Math.floor(Math.random() * chatters.length)];
+    const filteredChatters = filterChatters();
+    if (filteredChatters.length > 0) {
+      const randomUser = filteredChatters[Math.floor(Math.random() * filteredChatters.length)];
       setTargetWord(randomUser);
       setScreen('keyboard');
     } else {
@@ -122,7 +149,8 @@ const App = () => {
   };
 
   const resetGame = () => {
-    const randomUser = chatters[Math.floor(Math.random() * chatters.length)];
+    const filteredChatters = filterChatters();
+    const randomUser = filteredChatters[Math.floor(Math.random() * filteredChatters.length)];
     setTargetWord(randomUser);
     setGuesses([]);
     setCurrentGuess('');
@@ -171,6 +199,12 @@ const App = () => {
     const secondRow = 'asdfghjkl';
     const thirdRow = 'zxcvbnm';
     const numbers = '0123456789_';
+
+    const openProfileCard = () => {
+      const url = `https://www.twitch.tv/popout/${channel}/viewercard/${targetWord}?popout=`;
+      const windowFeatures = 'width=400,height=600,resizable,scrollbars';
+      window.open(url, 'ProfileCardPopout', windowFeatures);
+    };
 
     return (
       <div className="KeyboardScreen font-mono">
@@ -241,11 +275,17 @@ const App = () => {
         </div>
       </div>
       {isModalVisible && (
-        <dialog open className="modal fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center">
-        <div className="modal-content bg-white p-4 rounded shadow-lg text-center">
-          <p className="text-xl mb-4">{modalMessage}</p>
-          <button className="bg-stone-500 text-white p-2 rounded" onClick={resetGame}>New Game</button>
-        </div>
+        <dialog open className="modal fixed inset-0 flex bg-transparent items-center justify-center">
+          <div className="modal-content bg-white p-4 rounded-xl shadow-lg text-center">
+            <p className="text-xl mb-4">{modalMessage}</p>
+            <button
+                onClick={openProfileCard}
+                className="bg-blue-500 hover:bg-blue-700 text-white p-2 rounded mb-4 block mx-auto"
+              >
+                View {targetWord}'s Profile Card
+            </button>
+            <button className="bg-stone-500 text-white p-2 rounded" onClick={resetGame}>New Game</button>
+          </div>
         </dialog>
       )}
       </div>
@@ -261,11 +301,42 @@ const App = () => {
               <button onClick={handleStartClick} className="bg-stone-500 text-white p-2 rounded m-2">
                 Start Game
               </button>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex justify-center gap-2">
+                  <p className="text-stone-700 text-md">Filters:</p>
+                  <label className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={chatterFilter.all}
+                      onChange={() => setChatterFilter({ all: !chatterFilter.all, mods: false, subs: false })}
+                    />
+                    All
+                  </label>
+                  <label className={`flex items-center gap-1 ${chatterFilter.all && 'text-stone-400 hover:cursor-not-allowed'}`}>
+                    <input
+                      type="checkbox"
+                      checked={chatterFilter.mods}
+                      onChange={() => setChatterFilter({ ...chatterFilter, mods: !chatterFilter.mods })}
+                      disabled={chatterFilter.all}
+                    />
+                    Mods
+                  </label>
+                  <label className={`flex items-center gap-1 ${chatterFilter.all && 'text-stone-400 hover:cursor-not-allowed'}`}>
+                    <input
+                      type="checkbox"
+                      checked={chatterFilter.subs}
+                      onChange={() => setChatterFilter({ ...chatterFilter, subs: !chatterFilter.subs })}
+                      disabled={chatterFilter.all}
+                    />
+                    Subs
+                  </label>
+                </div>
+              </div>
               <p className="text-stone-700 text-xl mb-4">
-                {channel ? `Hello ${channel}'s chat, type anything to join! (${chatters.length} have joined)` : 'Connecting...'}
+                {channel ? `Hello ${channel}'s chat, type anything to join! (${filterChatters().length} have joined)` : 'Connecting...'}
               </p>
               <ul className="text-stone-600 mb-4">
-                {chatters.map((chatter, index) => (
+                {filterChatters().map((chatter, index) => (
                   <li key={index}>{chatter}</li>
                 ))}
               </ul>
