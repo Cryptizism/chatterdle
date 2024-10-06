@@ -1,5 +1,5 @@
 import './App.css';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import tmi from 'tmi.js';
 
 const App = () => {
@@ -12,15 +12,7 @@ const App = () => {
   const [keyColors, setKeyColors] = useState({});
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const user = urlParams.get('user') || prompt('Please enter your name');
-    if (user) {
-      setChannel(user);
-      connectToChannel(user);
-    }
-  }, []);
+  const userInputRef = useRef(null);
 
   const connectToChannel = (channelName) => {
     const client = new tmi.Client({
@@ -134,6 +126,14 @@ const App = () => {
     setIsModalVisible(false);
   };
 
+  const handleUserSubmit = () => {
+    const user = userInputRef.current.value;
+    if (user) {
+      setChannel(user);
+      connectToChannel(user);
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (screen === 'keyboard') {
@@ -245,17 +245,28 @@ const App = () => {
     <div className="App min-h-screen bg-stone-100 flex flex-col items-center justify-center font-mono">
       {screen === 'home' ? (
         <header className="App-header text-center">
-          <button onClick={handleStartClick} className="bg-stone-500 text-white p-2 rounded">
-            Start
-          </button>
-          <p className="text-stone-700 text-xl mb-4">
-            {channel ? `Hello ${channel}'s chat, type anything to join! (${chatters.length} have joined)` : 'Connecting...'}
-          </p>
-          <ul className="text-stone-600 mb-4">
-            {chatters.map((chatter, index) => (
-              <li key={index}>{chatter}</li>
-            ))}
-          </ul>
+          { channel ? (
+            <>
+              <button onClick={handleStartClick} className="bg-stone-500 text-white p-2 rounded m-2">
+                Start Game
+              </button>
+              <p className="text-stone-700 text-xl mb-4">
+                {channel ? `Hello ${channel}'s chat, type anything to join! (${chatters.length} have joined)` : 'Connecting...'}
+              </p>
+              <ul className="text-stone-600 mb-4">
+                {chatters.map((chatter, index) => (
+                  <li key={index}>{chatter}</li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <div className="mb-4 flex items-center align-middle justify-center gap-2">
+              <input ref={userInputRef} type="text" placeholder="Enter your twitch name" className="p-2 rounded border w-96" />
+              <button onClick={handleUserSubmit} className="bg-stone-500 text-white p-2 rounded">
+                Enter
+              </button>
+            </div>
+          )}
         </header>
       ) : (
         <KeyboardScreen />
