@@ -41,6 +41,28 @@ const App = () => {
     });
   }
 
+  const addChats = (username, message, tags) => {
+    const chatOverlay = document.getElementById('chat-overlay');
+    if (chatOverlay) {
+      const messageElement = document.createElement('div');
+      messageElement.className = 'chat-message text-white p-2 rounded mb-2';
+      messageElement.style.color = tags['color'] || 'white';
+      
+      messageElement.innerHTML = `<strong>${username}</strong>: ${message}`;
+      messageElement.style.position = 'absolute';
+      messageElement.style.top = `${Math.random() * 100}vh`;
+      messageElement.style.left = `${Math.random() * 100}vw`;
+      messageElement.style.transition = 'all 0.5s ease-in-out';
+      chatOverlay.appendChild(messageElement);
+      setTimeout(() => {
+        messageElement.style.opacity = '0';
+        setTimeout(() => {
+          chatOverlay.removeChild(messageElement);
+        }, 500);
+      }, 5000);
+    }
+  }
+
   const connectToChannel = (channelName) => {
     const client = new tmi.Client({
       channels: [channelName]
@@ -60,6 +82,7 @@ const App = () => {
             return prevChatters;
           }
         });
+        addChats(username, message, tags);
       }
     });
   };
@@ -95,7 +118,7 @@ const App = () => {
         setModalMessage('Congratulations! You guessed the correct chatter!');
         setIsModalVisible(true);
       } else if (guesses.length >= 6) {
-        setModalMessage(`Game Over! The chatter was: ${targetWord}`);
+        setModalMessage(`You lost! The chatter was: ${targetWord}`);
         setIsModalVisible(true);
       }
     }
@@ -275,18 +298,23 @@ const App = () => {
         </div>
       </div>
       {isModalVisible && (
-        <dialog open className="modal fixed inset-0 flex bg-transparent items-center justify-center">
-          <div className="modal-content bg-white p-4 rounded-xl shadow-lg text-center">
-            <p className="text-xl mb-4">{modalMessage}</p>
-            <button
-                onClick={openProfileCard}
-                className="bg-blue-500 hover:bg-blue-700 text-white p-2 rounded mb-4 block mx-auto"
-              >
-                View {targetWord}'s Profile Card
-            </button>
-            <button className="bg-stone-500 text-white p-2 rounded" onClick={resetGame}>New Game</button>
+        <>
+          <dialog open className="modal fixed inset-0 flex bg-transparent items-center justify-center z-50">
+            <div className="modal-content bg-white p-4 rounded-xl shadow-lg text-center">
+              <p className="text-xl mb-4">{modalMessage}</p>
+              <button
+                  onClick={openProfileCard}
+                  className="bg-blue-500 hover:bg-blue-700 text-white p-2 rounded mb-4 block mx-auto"
+                >
+                  View {targetWord}'s Profile Card
+              </button>
+              <button className="bg-stone-500 text-white p-2 rounded" onClick={resetGame}>New Game</button>
+            </div>
+          </dialog>
+          <div id="chat-overlay" className="fixed inset-0 bg-black opacity-50 z-40">
+
           </div>
-        </dialog>
+        </>
       )}
       </div>
     );
