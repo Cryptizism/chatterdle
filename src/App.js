@@ -18,6 +18,7 @@ const App = () => {
   const [keyColors, setKeyColors] = useState({});
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
+  const [activeCharIndex, setActiveCharIndex] = useState(0);
 
   const [cookies, setCookie] = useCookies(['user']);
 
@@ -98,20 +99,35 @@ const App = () => {
     }
   };
 
-  const handleKeyPress = (char) => {
-    if (currentGuess.length < targetWord.length && !isModalVisible) {
-      setCurrentGuess(currentGuess + char);
-    }
-  };
+  const setCurrentGuessPadded = (guess) => {
+    const paddedGuess = guess.padEnd(targetWord.length, '\u00A0');
+    setCurrentGuess(paddedGuess);
+  }
 
+  const handleKeyPress = (char) => {
+    if (isModalVisible) return;
+  
+    const updatedGuess = currentGuess.split('');
+    updatedGuess[activeCharIndex] = char;
+    setCurrentGuessPadded(updatedGuess.join(''));
+    setActiveCharIndex(Math.min(activeCharIndex + 1, targetWord.length - 1));
+  };
+  
   const handleDelete = () => {
-    setCurrentGuess(currentGuess.slice(0, -1));
+    if (isModalVisible) return;
+
+    const updatedGuess = currentGuess.split('');
+    updatedGuess.splice(activeCharIndex, 1);
+    setCurrentGuessPadded(updatedGuess.join(''));
+    setActiveCharIndex(Math.max(activeCharIndex - 1, 0));
   };
 
   const handleSubmitGuess = () => {
-    if (currentGuess.length === targetWord.length) {
+    const parsedGuess = currentGuess.trim();
+    if (parsedGuess.length === targetWord.length) {
       setGuesses([...guesses, currentGuess]);
-      setCurrentGuess('');
+      setCurrentGuessPadded('');
+      setActiveCharIndex(0);
       updateKeyColors(currentGuess);
 
       if (currentGuess === targetWord) {
@@ -199,6 +215,10 @@ const App = () => {
           handleSubmitGuess();
         } else if (event.key.length === 1 && event.key.match(/[a-z0-9_]/i)) {
           handleKeyPress(event.key.toLowerCase());
+        } else if (event.key === 'ArrowLeft') {
+          setActiveCharIndex(Math.max(activeCharIndex - 1, 0));
+        } else if (event.key === 'ArrowRight') {
+          setActiveCharIndex(Math.min(activeCharIndex + 1, targetWord.length - 1));
         }
       }
     };
@@ -247,8 +267,8 @@ const App = () => {
         ))}
         <div className="guess flex justify-center mb-2">
         {Array.from({ length: targetWord.length }).map((_, charIndex) => (
-          <span key={charIndex} className="key-button bg-stone-200 text-black m-1 p-2 rounded">
-          {currentGuess[charIndex] || '\u00A0'}
+          <span key={charIndex} className={`key-button ${activeCharIndex == charIndex ? 'bg-stone-400' : 'bg-stone-200'} text-black m-1 p-2 rounded`} onClick={() => setActiveCharIndex(charIndex)}>
+            {currentGuess[charIndex] || '\u00A0'}
           </span>
         ))}
         </div>
