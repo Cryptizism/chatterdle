@@ -11,8 +11,8 @@ const App = () => {
     mods: false,
     subs: false
   });
-  const [screen, setScreen] = useState('keyboard');
-  const [targetWord, setTargetWord] = useState('aaabb');
+  const [screen, setScreen] = useState('home');
+  const [targetWord, setTargetWord] = useState('');
   const [guesses, setGuesses] = useState([]);
   const [currentGuess, setCurrentGuess] = useState('');
   const [keyColors, setKeyColors] = useState({});
@@ -20,8 +20,13 @@ const App = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [activeCharIndex, setActiveCharIndex] = useState(0);
+  const [cheats, setCheats] = useState({
+    viewNames: true,
+    viewOccurrences: true
+  });
 
   const [cookies, setCookie] = useCookies(['user']);
+  const [cheatCookie, setCheatCookie] = useCookies(['cheats']);
 
   const userInputRef = useRef(null);
 
@@ -246,6 +251,17 @@ const App = () => {
     };
   }, [screen, handleDelete, handleSubmitGuess, handleKeyPress]);
 
+  const setCheatsWithCookie = (newCheats) => {
+    setCheats(newCheats);
+    setCheatCookie('cheats', newCheats, { path: '/' });
+  };
+
+  useEffect(() => {
+    if (cheatCookie.cheats) {
+      setCheats(cheatCookie.cheats);
+    }
+  }, [cheatCookie.cheats]);
+
   useEffect(() => {
     if (cookies.user && userInputRef.current) {
       userInputRef.current.value = cookies.user;   
@@ -258,9 +274,11 @@ const App = () => {
         {chars.split('').map((char, index) => (
           <button key={index} className={`group key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
             {char}
-            <span className="tooltip hidden group-hover:block absolute bg-black text-white text-xs p-1 rounded mt-2">
-              {keyOccurrences[char] ? `Max Used: ${keyOccurrences[char]}` : 'Not used'}
-            </span>
+            {cheats.viewOccurrences && (
+              <span className="tooltip hidden group-hover:block absolute bg-black text-white text-xs p-1 rounded mt-2">
+                {keyOccurrences[char] ? `Max Used: ${keyOccurrences[char]}` : 'Not used'}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -385,13 +403,36 @@ const App = () => {
                     Subs
                   </label>
                 </div>
+                <div className="flex justify-center gap-2">
+                  <p className="text-stone-700 text-md">Cheats:</p>
+                  <label className={"flex items-center gap-1"}>
+                    <input
+                      type="checkbox"
+                      checked={cheats.viewNames}
+                      onChange={() => setCheatsWithCookie({ ...cheats, viewNames: !cheats.viewNames })}
+                    />
+                    View Names Pregame
+                  </label>
+                  <label className={"flex items-center gap-1"}>
+                    <input
+                      type="checkbox"
+                      checked={cheats.viewOccurrences}
+                      onChange={() => setCheatsWithCookie({ ...cheats, viewOccurrences: !cheats.viewOccurrences })}
+                    />
+                    View Letter Occurences
+                  </label>
+                </div>
               </div>
               <p className="text-stone-700 text-xl mb-4">
                 {channel ? `Hello ${channel}'s chat, type anything to join! (${filterChatters().length} have joined)` : 'Connecting...'}
               </p>
-              <ul className="text-stone-600 mb-4 flex flex-wrap mx-96 gap-x-4 gap-y-2">
+              <ul className="text-stone-600 mb-4 flex flex-wrap mx-96 gap-x-4 gap-y-2 max-h-[60vh] overflow-y-auto border border-stone-300 p-4 rounded">
                 {filterChatters().map((chatter, index) => (
-                  <li key={index} style={{ backgroundColor: chatters[chatter].colour, padding: '4px 8px', borderRadius: '4px', textShadow: chatters[chatter].colour == "white" ? "none" : "1px 1px 2px black", color:chatters[chatter].colour == "white" ? "black" : "white" }}>
+                  <li key={index} className={`px-1 py-2 rounded ${chatters[chatter].colour == "white" ? "text-black" : "text-white"} ${!cheats.viewNames && 'blur-sm'} hover:blur-0`}
+                  style={{
+                    backgroundColor: chatters[chatter].colour,
+                    textShadow: chatters[chatter].colour == "white" ? "none" : "1px 1px 2px black",
+                  }}>
                     {chatters[chatter].mod  && <img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3" alt="Mod" className="inline-block w-4 h-4 mr-2" />}
                     {chatters[chatter].subscriber && <img src="https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3" alt="Subscriber" className="inline-block w-4 h-4 mr-2" />}
                     {chatter}
