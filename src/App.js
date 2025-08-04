@@ -76,9 +76,10 @@ const App = () => {
         const username = tags['username'];
         const mod = tags['mod'];
         const subscriber = tags['subscriber'];
+        const colour = tags['color'] || 'white';
         setChatters((prevChatters) => {
           if (!prevChatters[username]) {
-            return { ...prevChatters, [username]: { mod, subscriber } };
+            return { ...prevChatters, [username]: { mod, subscriber, colour } };
           } else {
             return prevChatters;
           }
@@ -383,9 +384,13 @@ const App = () => {
               <p className="text-stone-700 text-xl mb-4">
                 {channel ? `Hello ${channel}'s chat, type anything to join! (${filterChatters().length} have joined)` : 'Connecting...'}
               </p>
-              <ul className="text-stone-600 mb-4">
+              <ul className="text-stone-600 mb-4 flex flex-wrap mx-96 gap-x-4 gap-y-2">
                 {filterChatters().map((chatter, index) => (
-                  <li key={index}>{chatter}</li>
+                  <li key={index} style={{ backgroundColor: chatters[chatter].colour, padding: '4px 8px', borderRadius: '4px', textShadow: chatters[chatter].colour == "white" ? "none" : "1px 1px 2px black", color:chatters[chatter].colour == "white" ? "black" : "white" }}>
+                    {chatters[chatter].mod  && <img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3" alt="Mod" className="inline-block w-4 h-4 mr-2" />}
+                    {chatters[chatter].subscriber && <img src="https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3" alt="Subscriber" className="inline-block w-4 h-4 mr-2" />}
+                    {chatter}
+                  </li>
                 ))}
               </ul>
             </>
