@@ -11,11 +11,12 @@ const App = () => {
     mods: false,
     subs: false
   });
-  const [screen, setScreen] = useState('home');
-  const [targetWord, setTargetWord] = useState('');
+  const [screen, setScreen] = useState('keyboard');
+  const [targetWord, setTargetWord] = useState('aaabb');
   const [guesses, setGuesses] = useState([]);
   const [currentGuess, setCurrentGuess] = useState('');
   const [keyColors, setKeyColors] = useState({});
+  const [keyOccurrences, setKeyOccurrences] = useState({});
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [activeCharIndex, setActiveCharIndex] = useState(0);
@@ -168,12 +169,14 @@ const App = () => {
     const feedback = Array(guess.length).fill('grey');
     const targetWordArray = targetWord.split('');
     const guessArray = guess.split('');
+    const newKeyOccurrences = {};
 
     // First pass: mark greens
     guessArray.forEach((char, index) => {
       if (char === targetWordArray[index]) {
         feedback[index] = 'green';
         targetWordArray[index] = null; // Mark this char as used
+        newKeyOccurrences[char] = (newKeyOccurrences[char] || 0) + 1;
       }
     });
 
@@ -182,8 +185,19 @@ const App = () => {
       if (feedback[index] !== 'green' && targetWordArray.includes(char)) {
         feedback[index] = 'yellow';
         targetWordArray[targetWordArray.indexOf(char)] = null; // Mark this char as used
+        newKeyOccurrences[char] = (newKeyOccurrences[char] || 0) + 1;
       }
     });
+
+    // Update key occurrences
+    guessArray.forEach((char) => {
+      if (newKeyOccurrences[char] > (keyOccurrences[char] || 0)) {
+        setKeyOccurrences((prev) => ({
+          ...prev,
+          [char]: newKeyOccurrences[char],
+        }));
+      }
+    });   
 
     return feedback;
   };
@@ -238,6 +252,21 @@ const App = () => {
     }
   }, [cookies.user]);
 
+  const keyboardRow = (chars) => {
+    return (
+      <div className="keyboard-row flex justify-center mb-2">
+        {chars.split('').map((char, index) => (
+          <button key={index} className={`group key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
+            {char}
+            <span className="tooltip hidden group-hover:block absolute bg-black text-white text-xs p-1 rounded mt-2">
+              {keyOccurrences[char] ? `Max Used: ${keyOccurrences[char]}` : 'Not used'}
+            </span>
+          </button>
+        ))}
+      </div>
+    );
+  };
+
   const KeyboardScreen = () => {
     const firstRow = 'qwertyuiop';
     const secondRow = 'asdfghjkl';
@@ -285,34 +314,10 @@ const App = () => {
       </div>
       <hr className="my-4" />
       <div className="keyboard">
-        <div className="keyboard-row flex justify-center mb-2">
-        {numbers.split('').map((char, index) => (
-          <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
-          {char}
-          </button>
-        ))}
-        </div>
-        <div className="keyboard-row flex justify-center mb-2">
-        {firstRow.split('').map((char, index) => (
-          <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
-          {char}
-          </button>
-        ))}
-        </div>
-        <div className="keyboard-row flex justify-center mb-2">
-        {secondRow.split('').map((char, index) => (
-          <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
-          {char}
-          </button>
-        ))}
-        </div>
-        <div className="keyboard-row flex justify-center mb-2">
-        {thirdRow.split('').map((char, index) => (
-          <button key={index} className={`key-button font-mono ${keyColors[char] || 'bg-stone-300'} text-white m-1 p-3 rounded`} onClick={() => handleKeyPress(char)}>
-          {char}
-          </button>
-        ))}
-        </div>
+        {keyboardRow(numbers)}
+        {keyboardRow(firstRow)}
+        {keyboardRow(secondRow)}
+        {keyboardRow(thirdRow)}
         <div className="keyboard-row flex justify-center mb-2">
         <button className="key-button font-mono bg-stone-500 text-white m-1 p-2 rounded" onClick={handleDelete}>Delete</button>
         <button className="key-button font-mono bg-stone-500 text-white m-1 p-2 rounded" onClick={handleSubmitGuess}>Submit</button>
